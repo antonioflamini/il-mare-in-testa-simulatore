@@ -20,7 +20,7 @@ Simulatore dei quiz ministeriali per la patente nautica entro 12 miglia, senza a
 
 ## Segnalazioni
 
-Trovi un errore? Usa «Segnala un errore» sotto la domanda nel simulatore, oppure apri una [segnalazione](../../issues/new/choose).
+Trovi un errore? Usa «Segnala un errore» sotto la domanda nel simulatore, scrivi a ilmareintestaantonioflamini@gmail.com oppure apri una [segnalazione](../../issues/new/choose).
 
 Il primo giorno di ogni mese un controllo automatico verifica se sulla pagina del Ministero sono comparsi nuovi provvedimenti sulle patenti nautiche e, se sì, apre una segnalazione.
 

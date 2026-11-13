@@ -332,7 +332,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
 /* overlay */
 .overlay{position:fixed;inset:0;z-index:50;background:rgba(5,15,22,.72);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.overlay .box{background:var(--surface);border-radius:14px;padding:22px;max-width:460px;width:100%;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px}
+.overlay .box{background:var(--surface);border-radius:14px;padding:22px;max-width:460px;width:100%;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
 .overlay img{max-width:min(92vw,900px);max-height:84vh;background:#fff;border-radius:10px;padding:10px}
 .overlay .x{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));background:var(--surface);border:0;border-radius:99px;width:40px;height:40px;font-size:20px}
 
@@ -473,6 +473,11 @@ main#view>*{zoom:var(--zoom,1)}
 @media print{main#view>*{zoom:1}}
 
 @media (max-width:480px){.num-row{grid-template-columns:minmax(0,auto) minmax(0,1fr)}.num-row dt{white-space:normal}}
+
+.rep-ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.rep-way{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--muted)}
+.rep-way b{color:var(--ink);font-size:14.5px}.rep-way .btn{align-self:flex-start;margin-top:4px}
+.rep-mail{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.rep-mail code{font:600 13px var(--f-mono);color:var(--ink);user-select:all;overflow-wrap:anywhere}
 </style>
 
 <header class="bar"><div class="bar-in">
@@ -1866,7 +1871,7 @@ async function dlDoc(filename,title,inner,wrapClass){
   catch(e){ if(e&&e.code==='declined') return; if(e&&e.code==='rate_limited'){ return; } fallback(); }
 }
 /* ---------- SEGNALAZIONI ---------- */
-const REPO='antonioflamini/il-mare-in-testa-simulatore', APP_VER='13 novembre 2026';
+const REPO='antonioflamini/il-mare-in-testa-simulatore', APP_VER='13 novembre 2026', CONTACT_EMAIL='ilmareintestaantonioflamini@gmail.com';
 function qLabel(q){ return q.bank==='d1'?'D1 '+q.id.slice(1):(q.bank==='vela'?'Vela n. ':q.bank==='e12'?'Carteggio 12 M ':q.bank==='sl'?'Carteggio S.L. ':'Base n. ')+(q.n||q.id.slice(1)); }
 function reportText(q,tipo,desc){
   const ans=q.a&&q.c!==null&&q.a[q.c]!==undefined?q.a[q.c]:(q.bank==='vela'?(q.c?'VERO':'FALSO'):'');
@@ -1879,17 +1884,21 @@ function openReport(id){
     <h2 id="repT">Segnala un errore</h2><p class="muted" style="margin:0"><b>${esc(qLabel(q))}</b> · ${esc((q.q||q.body||'').slice(0,140))}${(q.q||q.body||'').length>140?'…':''}</p>
     <label class="stack" style="gap:6px"><span style="font-weight:600;font-size:14px">Che cosa non va?</span><div class="seg" role="radiogroup" id="repTipo">${tipi.map((x,i)=>`<button type="button" role="radio" aria-checked="${i===0}" data-tipo="${x}" style="${i===0?'background:var(--navy);color:var(--navy-ink)':''}">${x}</button>`).join('')}</div></label>
     <label class="stack" style="gap:6px"><span style="font-weight:600;font-size:14px">Descrivi il problema</span><textarea id="repDesc" class="rev-ta" rows="4" placeholder="Per esempio: la spiegazione parla di 8 nodi ma la risposta del listato dice 10."></textarea></label>
-    <p class="muted" style="margin:0;font-size:13px">La segnalazione si apre su GitHub già compilata: serve un account GitHub gratuito. Se non l'hai, copia il testo e mandalo all'autore.</p>
-    <div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="close">Annulla</button><button class="btn ghost" data-act="repCopy" data-id="${id}">Copia il testo</button><a class="btn" id="repGo" target="_blank" rel="noopener" href="#">Apri su GitHub</a></div>
+    <div class="rep-ways">
+      <div class="rep-way"><b>Per email</b><span>Non serve nessun account. Si apre la tua posta con il messaggio già scritto; se non si apre, copia il testo e mandalo a</span><span class="rep-mail"><code id="repMail">${esc(CONTACT_EMAIL)}</code><button type="button" class="linkbtn" data-act="repCopyMail">copia l'indirizzo</button></span><a class="btn" id="repMailGo" href="#">Scrivi all'autore</a></div>
+      <div class="rep-way"><b>Su GitHub</b><span>Per chi ha un account GitHub: la segnalazione resta pubblica e si può seguire.</span><a class="btn ghost" id="repGo" target="_blank" rel="noopener" href="#">Apri su GitHub</a></div>
+    </div>
+    <div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="close">Annulla</button><button class="btn ghost" data-act="repCopy" data-id="${id}">Copia il testo</button></div>
     <p class="muted" id="repMsg" style="margin:0;font-size:13px" aria-live="polite"></p></div></div>`;
-  const upd=()=>{ const tipo=$('#repTipo [aria-checked=true]').dataset.tipo; const r=reportText(q,tipo,$('#repDesc').value.trim()); $('#repGo').href=`https://github.com/${REPO}/issues/new?labels=segnalazione&title=${encodeURIComponent(r.title)}&body=${encodeURIComponent(r.body)}`; };
+  const upd=()=>{ const tipo=$('#repTipo [aria-checked=true]').dataset.tipo; const r=reportText(q,tipo,$('#repDesc').value.trim()); $('#repGo').href=`https://github.com/${REPO}/issues/new?labels=segnalazione&title=${encodeURIComponent(r.title)}&body=${encodeURIComponent(r.body)}`; $('#repMailGo').href=`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Simulatore · '+r.title)}&body=${encodeURIComponent(r.title+'\n\n'+r.body.replace(/\*\*/g,''))}`; };
   $('#repTipo').onclick=e=>{ const b=e.target.closest('[data-tipo]'); if(!b) return; $('#repTipo').querySelectorAll('button').forEach(x=>{x.setAttribute('aria-checked',x===b); x.style.cssText=x===b?'background:var(--navy);color:var(--navy-ink)':'';}); upd(); };
   $('#repDesc').oninput=upd; upd(); $('#repDesc').focus();
 }
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-act]'); if(!t) return;
   if(t.dataset.act==='report'){ openReport(t.dataset.id); }
+  else if(t.dataset.act==='repCopyMail'){ const ok=()=>{$('#repMsg').textContent='Indirizzo copiato: '+CONTACT_EMAIL;}; try{ navigator.clipboard.writeText(CONTACT_EMAIL).then(ok,()=>{ const r=document.createRange(); r.selectNodeContents($('#repMail')); getSelection().removeAllRanges(); getSelection().addRange(r); $('#repMsg').textContent='Seleziona e copia l\'indirizzo con Ctrl+C.'; }); }catch(e){} }
   else if(t.dataset.act==='repCopy'){ const q=BY[t.dataset.id]; const r=reportText(q,$('#repTipo [aria-checked=true]').dataset.tipo,$('#repDesc').value.trim()); const txt=r.title+'\n\n'+r.body.replace(/\*\*/g,'');
-    const ok=()=>{$('#repMsg').textContent='Testo copiato negli appunti.';}; const ko=()=>{ $('#repDesc').value=txt; $('#repDesc').select(); $('#repMsg').textContent='Copia non disponibile: il testo è nel riquadro, selezionato. Copialo con Ctrl+C.'; };
+    const ok=()=>{$('#repMsg').textContent='Testo copiato: incollalo in una email a '+CONTACT_EMAIL+'.';}; const ko=()=>{ $('#repDesc').value=txt; $('#repDesc').select(); $('#repMsg').textContent='Copia non disponibile: il testo è nel riquadro, selezionato. Copialo con Ctrl+C.'; };
     try{ navigator.clipboard.writeText(txt).then(ok,ko); }catch(err){ ko(); } }
 });
 
@@ -1987,6 +1996,8 @@ function viewInfo(){
   <p>Le spiegazioni del perché sono in corso di stesura per argomento: coprono tutte le domande del quiz base, del quiz vela e del D1 (dove c'è un'anomalia del listato è segnalata). Ogni domanda rimanda comunque al capitolo dei volumi «Il Mare in Testa» in cui l'argomento è spiegato.</p>
   ${IN_CLAUDE?`<h3>Revisione dell'autore</h3>
   <p>Le spiegazioni sono riviste dall'autore dei volumi. La <a href="#revisione">modalità revisione</a> elenca ogni spiegazione per argomento, con la risposta esatta, e permette di approvarla o di riscriverla.</p>`:''}
+  <h3>Contatti e segnalazioni</h3>
+  <p>Hai trovato un errore o vuoi scrivere all'autore? Usa «Segnala un errore» sotto la domanda, oppure scrivi a <a href="mailto:ilmareintestaantonioflamini@gmail.com">ilmareintestaantonioflamini@gmail.com</a>.</p>
   <h3>Fonti</h3>
   <ul><li>Allegato A al Decreto Dirigenziale n. 131 del 31 maggio 2022: 1.472 quiz base, 250 quiz vela, 50 esercizi di carteggio entro 12 miglia, 135 esercizi di carteggio senza limiti, fascicolo delle 103 figure e tabella di deviazione.</li>
   <li>Allegato A al decreto n. 62 del 18 aprile 2025, Elenco nazionale unico dei quesiti per la patente nautica di categoria D, tipo D1: 792 quesiti.</li></ul>
