@@ -26,6 +26,6 @@ Il primo giorno di ogni mese un controllo automatico verifica se sulla pagina de
 
 ## Privacy
 
-Il simulatore non usa cookie e non raccoglie dati: i progressi restano nel browser di chi studia.
+Il simulatore non usa cookie e non raccoglie dati personali: i progressi restano nel browser di chi studia. Le visite sono contate in forma anonima con [GoatCounter](https://www.goatcounter.com), senza cookie.
 
 © Antonio Flamini. Testi delle spiegazioni, schemi e copertine sono dell'autore; i quiz sono quelli pubblicati dal Ministero delle Infrastrutture e dei Trasporti.
