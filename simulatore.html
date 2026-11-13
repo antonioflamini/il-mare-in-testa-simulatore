@@ -155,7 +155,7 @@ h3{font-size:17px;font-weight:700;font-stretch:92%}
 .section-h{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:34px 0 14px;flex-wrap:wrap}
 
 /* patenti */
-.lic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.lic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px}
 .lic{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
 .lic header{display:flex;justify-content:space-between;align-items:start;gap:10px}
 .lic h3{font-size:21px;font-stretch:82%;font-weight:800;line-height:1.05}
@@ -424,7 +424,7 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .num-card dl{margin:0;display:flex;flex-direction:column}
 .num-row{display:grid;grid-template-columns:minmax(92px,auto) 1fr;gap:14px;padding:9px 0;border-top:1px solid var(--line);align-items:baseline}
 .num-row dt{font-family:var(--f-mono);font-weight:700;font-size:15px;color:var(--navy);white-space:nowrap}
-.num-row dd{margin:0;font-size:14.5px;line-height:1.45}
+.num-row dd{margin:0;min-width:0;overflow-wrap:anywhere;font-size:14.5px;line-height:1.45}
 .nrefs{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:middle}
 .nref{font:600 11px var(--f-mono);border:1px solid var(--line-strong);background:var(--sunk);color:var(--muted);border-radius:5px;padding:1px 5px;cursor:pointer}.nref:hover{color:var(--ink);border-color:var(--navy)}
 /* schemi */
@@ -466,6 +466,13 @@ table.t td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .report-row{display:flex;justify-content:flex-end;margin-top:2px}
 .linkbtn{background:none;border:0;padding:4px 0;font:inherit;font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}.linkbtn:hover{color:var(--ink)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;font-size:14px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:calc(100vw - 32px)}
+
+/* dimensione del testo: ingrandisce tutto il contenuto della pagina */
+main#view>*{zoom:var(--zoom,1)}
+.tools button:disabled{opacity:.35;cursor:default}
+@media print{main#view>*{zoom:1}}
+
+@media (max-width:480px){.num-row{grid-template-columns:minmax(0,auto) minmax(0,1fr)}.num-row dt{white-space:normal}}
 </style>
 
 <header class="bar"><div class="bar-in">
@@ -565,7 +572,8 @@ function record(id,ok){ if(ok===null||ok===undefined) return; const s=S.stats[id
 const wrongIds = () => Object.keys(S.stats).filter(id=>S.stats[id][2]===-1 && BY[id]);
 const dueIds = () => { const now=Date.now(); return Object.keys(S.stats).filter(id=>BY[id] && BY[id].c!==null && S.stats[id][4]<=now); };
 function updateErrCount(){ const n=dueIds().length, el=$('#errCount'); el.hidden=!n; el.textContent=n; }
-function applySettings(){ document.documentElement.style.setProperty('--scale',S.settings.scale||1);
+function applySettings(){ const z=S.settings.scale||1; document.documentElement.style.setProperty('--zoom',z);
+  const up=$('#fsUp'), dn=$('#fsDown'); if(up){ up.disabled=z>=1.4; dn.disabled=z<=0.9; up.title=dn.title='Dimensione del testo: '+Math.round(z*100)+'%'; }
   const th=S.settings.theme||''; if(th) document.documentElement.setAttribute('data-theme',th); else document.documentElement.removeAttribute('data-theme');
   const b=$('#themeBtn'); if(b) b.title='Tema: '+(th==='dark'?'scuro':th==='light'?'chiaro':'automatico'); }
 
@@ -715,7 +723,7 @@ function viewHome(){
       <div class="tick"><b>${fmtN(DB.base.filter(q=>q.e).length+DB.vela.filter(q=>q.e).length)}</b><span>spiegazioni del perché</span></div>
     </div>
   </section>
-  ${!S.settings.welcomed?`<div class="card welcome" style="margin-top:16px"><div class="row" style="align-items:flex-start"><div class="stack" style="gap:6px;flex:1;min-width:240px"><span class="eyebrow">Benvenuto a bordo</span><h2 style="margin:0">Da dove cominciare</h2></div><button class="btn ghost small" data-act="welcomeOk">Ho capito</button></div>
+  ${!S.settings.welcomed?`<div class="card welcome" style="margin-top:16px"><div class="row" style="align-items:flex-start"><div class="stack" style="gap:6px;flex:1;min-width:min(240px,100%)"><span class="eyebrow">Benvenuto a bordo</span><h2 style="margin:0">Da dove cominciare</h2></div><button class="btn ghost small" data-act="welcomeOk">Ho capito</button></div>
     <ol class="welcome-steps"><li><b>Studia per argomento</b><span>Rispondi alle domande del listato: dopo ogni risposta trovi il perché e il capitolo del manuale.</span></li><li><b>Ripassa ogni giorno</b><span>Le domande sbagliate tornano subito, le giuste dopo 1, 3, 7 e 16 giorni, finché non sono consolidate.</span></li><li><b>Simula l'esame</b><span>Quando l'indicatore di preparazione è alto, prova la simulazione con i tempi e gli errori ammessi.</span></li></ol></div>`:''}
   ${seenCount()?`<div style="margin-top:16px">${readinessCard()}</div>`:''}
   ${dueIds().length?`<div class="note" style="margin-top:14px">Hai <b>${dueIds().length}</b> ${dueIds().length===1?'domanda':'domande'} da ripassare oggi. <a href="#errori">Vai al ripasso →</a></div>`:''}
@@ -893,7 +901,7 @@ function gaugeSVG(p){ const r=46,c=2*Math.PI*r, col=p>=.8?'var(--stbd)':p>=.5?'v
   return `<svg viewBox="0 0 112 112" role="img" aria-label="${Math.round(p*100)}%"><circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--line)" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c*p} ${c}" transform="rotate(-90 56 56)"/><text x="56" y="62" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" font-size="26" fill="var(--ink)">${Math.round(p*100)}%</text></svg>`; }
 function readinessCard(){
   const R0=readiness();
-  return `<div class="card gauge">${gaugeSVG(R0.P)}<div class="stack" style="gap:6px;flex:1;min-width:220px"><h3>Probabilità stimata di superare il quiz base</h3>
+  return `<div class="card gauge">${gaugeSVG(R0.P)}<div class="stack" style="gap:6px;flex:1;min-width:min(220px,100%)"><h3>Probabilità stimata di superare il quiz base</h3>
    <p class="muted" style="margin:0;font-size:14.5px">${R0.seen<60?`È una stima ancora grezza: hai affrontato ${R0.seen} domande base su 1.472. Più ne fai, più diventa affidabile.`:`Calcolata sulla scheda ufficiale (20 domande ripartite per argomento, massimo 4 errori) e sulle tue risposte, con più peso a quelle consolidate nel ripasso.`}</p>
    <p style="margin:0;font-size:14.5px">Punto debole: <b>${esc(R0.weak[0])}</b> (${Math.round(R0.weak[1]*100)}%). <a href="#studio" data-act="studyWeak" data-t="${esc(R0.weak[0])}">Allenati lì →</a></p></div></div>`;
 }
@@ -1008,7 +1016,7 @@ function showFig(n){
   const qs=figUsers(n); const box=$('#figDetail');
   box.innerHTML=`<div class="card anim stack"><div class="row"><h2>Figura ${n}</h2><span class="spacer"></span><button class="btn ghost small" data-act="figClose">Chiudi</button></div>
    <div class="row" style="align-items:flex-start;gap:20px"><button class="q-fig" data-act="zoom" data-f="${n}"><img src="${DB.figs[n]}" alt="Figura ${n}"></button>
-   <div class="stack" style="flex:1;min-width:260px;gap:10px">${qs.map(q=>`<div class="rv">${metaHTML(q)}<div class="qq">${esc(q.q)}</div><div class="aa"><span class="c">✓ ${q.bank==='vela'?(q.c?'VERO':'FALSO'):esc(q.a[q.c])}</span></div>${q.e?`<p class="muted" style="margin:6px 0 0;font-size:14px">${esc(q.e)}</p>`:''}</div>`).join('')}</div></div>
+   <div class="stack" style="flex:1;min-width:min(260px,100%);gap:10px">${qs.map(q=>`<div class="rv">${metaHTML(q)}<div class="qq">${esc(q.q)}</div><div class="aa"><span class="c">✓ ${q.bank==='vela'?(q.c?'VERO':'FALSO'):esc(q.a[q.c])}</span></div>${q.e?`<p class="muted" style="margin:6px 0 0;font-size:14px">${esc(q.e)}</p>`:''}</div>`).join('')}</div></div>
    <div class="row"><button class="btn" data-act="figTrain" data-g="${n}-${n}">Allenati su questa figura</button></div></div>`;
   box.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -1220,11 +1228,11 @@ function viewColreg(){
     const v=CR_V.find(x=>x.k===crV);
     const qs=[...DB.base,...DB.d1].filter(q=>q.f>=34&&q.f<=60&&q.c!==null);
     body=`<div class="card stack"><div class="row" style="align-items:flex-start;gap:22px">
-      <div style="flex:1;min-width:280px" class="stack">${crSVG(v,crView,crDay)}
+      <div style="flex:1;min-width:min(280px,100%)" class="stack">${crSVG(v,crView,crDay)}
         <div class="row"><div class="seg" role="group" aria-label="Vista">${['prua','dritta','sinistra','poppa'].map(w=>`<button data-act="crView" data-w="${w}" class="${crView===w?'on-ok':''}" style="${crView===w?'background:var(--navy);color:var(--navy-ink)':''}">${w[0].toUpperCase()+w.slice(1)}</button>`).join('')}</div>
         <div class="seg" role="group" aria-label="Giorno o notte"><button data-act="crDay" data-d="0" style="${!crDay?'background:var(--navy);color:var(--navy-ink)':''}">Notte</button><button data-act="crDay" data-d="1" style="${crDay?'background:var(--navy);color:var(--navy-ink)':''}">Giorno</button></div></div>
         <p class="muted" style="margin:0;font-size:13.5px">Schema didattico, ${CR_DESC[crView]}: le posizioni sono semplificate, i colori e i settori seguono le regole 21-30.${v.k==='hover'?' Il cerchio tratteggiato indica la luce gialla lampeggiante.':''}${v.k==='dredge'?' Rossi e palloni dal lato ostruito, verdi e rombi dal lato da cui si può passare.':''}</p></div>
-      <div style="flex:1;min-width:240px" class="stack"><span class="eyebrow">Regola ${v.r}</span><h2>${esc(v.n)}</h2>
+      <div style="flex:1;min-width:min(240px,100%)" class="stack"><span class="eyebrow">Regola ${v.r}</span><h2>${esc(v.n)}</h2>
         <div class="facts"><div class="fact"><b style="font-size:15px">${crDay?(v.day.length?'vedi figura':'nessun segnale'):crLights(v,crView).length+' luci visibili'}</b><span>${crDay?'segnale diurno':'da questa vista'}</span></div><div class="fact"><b style="font-size:15px">${esc(v.fog)}</b><span>segnale in nebbia</span></div></div>
         <p style="margin:0;line-height:1.55">${esc(CR_PARTS.flatMap(p=>p.rules).find(r=>r[0]===v.r)[2])}</p></div></div>
       <label class="row" style="gap:8px">Unità <select id="crSel">${CR_V.map(x=>`<option value="${x.k}" ${x.k===crV?'selected':''}>${esc(x.n)}</option>`).join('')}</select></label>
@@ -1321,7 +1329,7 @@ function viewReview(){
     <div class="rev-sync">${sync}</div>
     <div class="stat-grid">${Object.keys(REV_BANKS).map(b=>{const c=revCounts(b); return `<button class="stat rev-stat" data-act="revBank" data-b="${b}" aria-pressed="${b===revBank}"><h3>${esc(REV_BANKS[b])}</h3><div class="rev-bar"><i class="ok" style="width:${c.n?c.ok/c.n*100:0}%"></i><i class="ko" style="width:${c.n?c.fix/c.n*100:0}%"></i></div><p style="margin:0;font-size:14px">${fmtN(c.ok)} approvate · ${fmtN(c.fix)} da correggere · ${fmtN(c.n-c.ok-c.fix)} da vedere</p></button>`;}).join('')}</div>
     <div class="opts-bar">
-      <label class="row" style="gap:8px;max-width:100%">Argomento <select id="revTemaSel" style="max-width:min(420px,calc(100vw - 140px))"><option value="">Tutti (${fmtN(all.length)})</option>${temi.map(t=>`<option value="${esc(t)}" ${t===revTema?'selected':''}>${esc(t)} (${all.filter(q=>q.t===t).length})</option>`).join('')}</select></label>
+      <label class="row" style="gap:8px;max-width:100%">Argomento <select id="revTemaSel" style="max-width:min(420px,100%)"><option value="">Tutti (${fmtN(all.length)})</option>${temi.map(t=>`<option value="${esc(t)}" ${t===revTema?'selected':''}>${esc(t)} (${all.filter(q=>q.t===t).length})</option>`).join('')}</select></label>
       <div class="seg" role="group" aria-label="Filtro">${[['todo','Da vedere'],['fix','Da correggere'],['ok','Approvate'],['all','Tutte']].map(f=>`<button data-act="revFil" data-f="${f[0]}" style="${revFil===f[0]?'background:var(--navy);color:var(--navy-ink)':''}">${f[1]}</button>`).join('')}</div>
       <span class="spacer"></span>
       <button class="btn small" data-act="revExport" ${fixAll?'':'disabled'}>Copia le correzioni (${fixAll})</button>
@@ -1563,7 +1571,7 @@ function prSheetHTML(){
   const tot=P.phases.reduce((s,ph)=>s+PH[ph.type].min,0);
   const sheet=`<div class="psheet"><header class="phead"><div><b>Il Mare in Testa</b><span>Scheda d'esame per esercitazione · patente nautica</span></div><div class="pcode">Scheda ${P.code}</div></header>
     <h1 class="ptitle">${esc(L.name)} · ${esc(L.sub)}</h1>
-    <div class="pfields"><span>Candidato <i></i></span><span>Data <i style="min-width:110px"></i></span><span>Tempo complessivo ${tot}′</span></div>
+    <div class="pfields"><span>Candidato <i></i></span><span>Data <i style="min-width:min(110px,100%)"></i></span><span>Tempo complessivo ${tot}′</span></div>
     ${P.phases.map(ph=>{const D=PH[ph.type]; const start=n; const body=ph.items.map(q=>{n++; return D.kind==='c12'||D.kind==='csl'?prCartQ(q):prQuestion(q,n);}).join('');
       return `<section class="pphase"><h2>${esc(D.label)} <small>${esc(D.desc)} · ${esc(D.rule)} · ${D.min} minuti</small></h2>${D.kind==='mc'?'<p class="pinfo">Una sola risposta esatta per ogni domanda: segna la casella.</p>':D.kind==='vf'?'<p class="pinfo">Indica se ogni affermazione è vera o falsa.</p>':'<p class="pinfo">Risolvi sulla carta nautica e riporta i risultati.</p>'}<ol class="plist" start="${start+1}">${body}</ol></section>`;}).join('')}
     <footer class="pfoot">Domande tratte dagli elenchi ufficiali (DD 131/2022 e Elenco unico D1). Simulatore della collana «Il Mare in Testa» di Antonio Flamini.</footer></div>`;
@@ -1582,7 +1590,7 @@ function viewPrint(){
   const opts=Object.entries(LIC).map(([k,l])=>`<option value="${k}" ${k===prLic?'selected':''}>${esc(l.name)} · ${esc(l.sub)}</option>`).join('');
   view().innerHTML=`<div class="stack"><div class="no-print stack"><div><span class="eyebrow">Su carta</span><h1 style="font-size:clamp(28px,4.4vw,40px)">Scheda d'esame da stampare</h1><p class="lead">Una scheda estratta con le stesse regole delle simulazioni, con il correttore su una pagina a parte. Utile per esercitarsi senza schermo o per una classe: ogni scheda ha un codice diverso.</p></div>
     <div class="card opts-bar" style="margin:0">
-      <label class="row" style="gap:8px;max-width:100%">Patente <select id="prLic" style="max-width:min(340px,calc(100vw - 130px))">${opts}</select></label>
+      <label class="row" style="gap:8px;max-width:100%;flex-wrap:wrap">Patente <select id="prLic" style="max-width:min(340px,100%)">${opts}</select></label>
       <label class="toggle"><input type="checkbox" id="prCart" ${prCart?'checked':''}> Includi il carteggio</label>
       <label class="toggle"><input type="checkbox" id="prWhy" ${prWhy?'checked':''}> Spiegazioni nel correttore</label>
       <span class="spacer"></span><button class="btn ghost" data-act="prNew">Nuova scheda</button><button class="btn" data-act="prPrint">Scarica da stampare</button></div>
@@ -1703,10 +1711,10 @@ function viewNumbers(){
   stopTimer();
   const tabs=`<div class="tabs no-print">${[['numeri','Numeri da ricordare'],['schemi','Schemi']].map(t=>`<button class="tab" aria-pressed="${numTab===t[0]}" data-act="numTab" data-t="${t[0]}">${t[1]}</button>`).join('')}</div>`;
   if(numTab==='schemi'){
-    view().innerHTML=`<div class="stack"><div class="row" style="align-items:flex-end"><div style="flex:1;min-width:260px"><span class="eyebrow">Schede di ripasso</span><h1 style="font-size:clamp(28px,4.4vw,40px)">Schemi</h1><p class="lead">I disegni che aiutano a fissare le domande più visive. Compaiono anche sotto la spiegazione delle domande collegate.</p></div><button class="btn ghost no-print" data-act="numPrint">Scarica da stampare</button></div>${tabs}${viewSchemes()}</div>`;
+    view().innerHTML=`<div class="stack"><div class="row" style="align-items:flex-end"><div style="flex:1;min-width:min(260px,100%)"><span class="eyebrow">Schede di ripasso</span><h1 style="font-size:clamp(28px,4.4vw,40px)">Schemi</h1><p class="lead">I disegni che aiutano a fissare le domande più visive. Compaiono anche sotto la spiegazione delle domande collegate.</p></div><button class="btn ghost no-print" data-act="numPrint">Scarica da stampare</button></div>${tabs}${viewSchemes()}</div>`;
     return;
   }
-  view().innerHTML=`<div class="stack"><div class="row" style="align-items:flex-end"><div style="flex:1;min-width:260px"><span class="eyebrow">Schede di ripasso</span><h1 style="font-size:clamp(28px,4.4vw,40px)">Numeri da ricordare</h1><p class="lead">Distanze, quantità, settori e sanzioni che tornano nei quiz. Ogni valore è preso dalla risposta esatta del listato: tocca il numero della domanda per vederla.</p></div><button class="btn ghost no-print" data-act="numPrint">Scarica da stampare</button></div>
+  view().innerHTML=`<div class="stack"><div class="row" style="align-items:flex-end"><div style="flex:1;min-width:min(260px,100%)"><span class="eyebrow">Schede di ripasso</span><h1 style="font-size:clamp(28px,4.4vw,40px)">Numeri da ricordare</h1><p class="lead">Distanze, quantità, settori e sanzioni che tornano nei quiz. Ogni valore è preso dalla risposta esatta del listato: tocca il numero della domanda per vederla.</p></div><button class="btn ghost no-print" data-act="numPrint">Scarica da stampare</button></div>
     ${tabs}<div class="num-toc no-print">${NUM.map(c=>`<a href="#numeri" data-act="numGo" data-k="${c.k}">${esc(c.t)}</a>`).join('')}</div>
     <div class="num-grid">${NUM.map(c=>{const ids=[...new Set(c.rows.flatMap(r=>r[2]))].filter(id=>BY[id]&&BY[id].c!==null); return `<section class="card num-card" id="num_${c.k}"><header><h2>${esc(c.t)}</h2><span class="muted">${esc(c.sub)}</span></header>
       <dl>${c.rows.map(r=>`<div class="num-row"><dt>${esc(r[0])}</dt><dd>${esc(r[1])}<span class="nrefs">${numRefs(r[2])}</span></dd></div>`).join('')}</dl>
@@ -2072,8 +2080,9 @@ document.addEventListener('keydown',e=>{
   else { if(e.key==='Enter'||e.key==='ArrowRight'){ if(SESS.ans[q.id]!==undefined||e.key==='ArrowRight'){ e.preventDefault(); if(SESS.i<SESS.items.length-1){SESS.i++;renderSess();} else if(e.key==='Enter') sessEnd(); } } if(e.key==='ArrowLeft'&&SESS.i>0){SESS.i--;renderSess();} }
 });
 
-$('#fsUp').onclick=()=>{S.settings.scale=Math.min(1.4,Math.round(((S.settings.scale||1)+.1)*10)/10);save();applySettings();};
-$('#fsDown').onclick=()=>{S.settings.scale=Math.max(.9,Math.round(((S.settings.scale||1)-.1)*10)/10);save();applySettings();};
+function setZoom(d){ S.settings.scale=Math.min(1.4,Math.max(.9,Math.round(((S.settings.scale||1)+d)*10)/10)); save(); applySettings(); toastMsg('Testo al '+Math.round(S.settings.scale*100)+'%'); }
+$('#fsUp').onclick=()=>setZoom(.1);
+$('#fsDown').onclick=()=>setZoom(-.1);
 $('#themeBtn').onclick=()=>{const order=['','light','dark']; S.settings.theme=order[(order.indexOf(S.settings.theme||'')+1)%3]; save(); applySettings();};
 applySettings();
 updateErrCount();
