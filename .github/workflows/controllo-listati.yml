@@ -42,7 +42,8 @@ jobs:
         if: steps.diff.outputs.stato == 'vuoto'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh issue create --title "Controllo listati: pagina del Ministero non raggiungibile ($(date +%Y-%m))" --body "Il controllo automatico non è riuscito a leggere la pagina. Verifica a mano su mit.gov.it."
+        run: |
+          gh issue create --title "Controllo listati: pagina del Ministero non raggiungibile ($(date +%Y-%m))" --body "Il controllo automatico non è riuscito a leggere la pagina. Verifica a mano su mit.gov.it."
       - name: Salva l'elenco aggiornato
         if: steps.diff.outputs.stato != 'vuoto'
         run: |
