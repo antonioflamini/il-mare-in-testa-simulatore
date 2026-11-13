@@ -1,0 +1,53 @@
+name: Controllo mensile dei listati ministeriali
+
+on:
+  schedule:
+    - cron: "17 7 1 * *"   # il giorno 1 di ogni mese
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  controllo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scarica l'elenco dei provvedimenti sulle patenti nautiche
+        run: |
+          mkdir -p controllo
+          curl -sSL --retry 3 -A "Mozilla/5.0 (controllo mensile Il Mare in Testa)" \
+            "https://www.mit.gov.it/temi/patenti-mezzi-abilitazioni/patenti-nautiche/normativa" -o pagina.html || true
+          # tiene solo i titoli e i collegamenti ai documenti, così le modifiche grafiche del sito non contano
+          grep -oiE 'href="[^"]+\.pdf"|>[^<]*(decreto|quiz|patent|nautic|D1)[^<]*<' pagina.html | sed 's/[<>]//g' | sort -u > controllo/nuovo.txt || true
+      - name: Confronta con il controllo precedente
+        id: diff
+        run: |
+          if [ ! -s controllo/nuovo.txt ]; then echo "stato=vuoto" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -f controllo/elenco.txt ] && ! diff -q controllo/elenco.txt controllo/nuovo.txt >/dev/null; then
+            diff controllo/elenco.txt controllo/nuovo.txt | grep '^>' | head -40 > controllo/novita.txt || true
+            echo "stato=cambiato" >> "$GITHUB_OUTPUT"
+          elif [ ! -f controllo/elenco.txt ]; then echo "stato=primo" >> "$GITHUB_OUTPUT"
+          else echo "stato=uguale" >> "$GITHUB_OUTPUT"; fi
+          mv controllo/nuovo.txt controllo/elenco.txt
+      - name: Apri una segnalazione se qualcosa è cambiato
+        if: steps.diff.outputs.stato == 'cambiato'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          { echo "La pagina del Ministero sulle patenti nautiche è cambiata rispetto al mese scorso."; echo; echo "Novità trovate:"; echo '```'; cat controllo/novita.txt; echo '```'; echo; echo "Controlla se ci sono nuovi quiz o modifiche agli elenchi (DD 131/2022, Elenco unico D1)."; } > corpo.md
+          gh issue create --title "Possibile aggiornamento dei listati ministeriali ($(date +%Y-%m))" --body-file corpo.md
+      - name: Avvisa se la pagina non è raggiungibile
+        if: steps.diff.outputs.stato == 'vuoto'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh issue create --title "Controllo listati: pagina del Ministero non raggiungibile ($(date +%Y-%m))" --body "Il controllo automatico non è riuscito a leggere la pagina. Verifica a mano su mit.gov.it."
+      - name: Salva l'elenco aggiornato
+        if: steps.diff.outputs.stato != 'vuoto'
+        run: |
+          git config user.name "controllo-listati"
+          git config user.email "actions@users.noreply.github.com"
+          git add controllo/elenco.txt
+          git diff --cached --quiet || git commit -m "Controllo mensile dei listati: $(date +%Y-%m-%d)"
+          git push
