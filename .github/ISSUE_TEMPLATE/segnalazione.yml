@@ -1,0 +1,26 @@
+name: Segnala un errore
+description: Una domanda, una risposta, una spiegazione o una figura che non torna
+title: "[Segnalazione] "
+labels: ["segnalazione"]
+body:
+  - type: input
+    id: domanda
+    attributes:
+      label: Domanda
+      description: Numero della domanda (per esempio «Base n. 603» o «D1 6.4.2-1»)
+    validations:
+      required: true
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Che cosa non va?
+      options: [Risposta, Spiegazione, Testo o refuso, Figura, Altro]
+    validations:
+      required: true
+  - type: textarea
+    id: descrizione
+    attributes:
+      label: Descrizione
+      description: Che cosa non torna e, se puoi, la fonte
+    validations:
+      required: true
