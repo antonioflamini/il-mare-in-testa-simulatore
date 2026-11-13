@@ -731,6 +731,7 @@ function viewHome(){
   </section>
   ${!S.settings.welcomed?`<div class="card welcome" style="margin-top:16px"><div class="row" style="align-items:flex-start"><div class="stack" style="gap:6px;flex:1;min-width:min(240px,100%)"><span class="eyebrow">Benvenuto a bordo</span><h2 style="margin:0">Da dove cominciare</h2></div><button class="btn ghost small" data-act="welcomeOk">Ho capito</button></div>
     <ol class="welcome-steps"><li><b>Studia per argomento</b><span>Rispondi alle domande del listato: dopo ogni risposta trovi il perché e il capitolo del manuale.</span></li><li><b>Ripassa ogni giorno</b><span>Le domande sbagliate tornano subito, le giuste dopo 1, 3, 7 e 16 giorni, finché non sono consolidate.</span></li><li><b>Simula l'esame</b><span>Quando l'indicatore di preparazione è alto, prova la simulazione con i tempi e gli errori ammessi.</span></li></ol></div>`:''}
+  ${installCardHTML()}
   ${seenCount()?`<div style="margin-top:16px">${readinessCard()}</div>`:''}
   ${dueIds().length?`<div class="note" style="margin-top:14px">Hai <b>${dueIds().length}</b> ${dueIds().length===1?'domanda':'domande'} da ripassare oggi. <a href="#errori">Vai al ripasso →</a></div>`:''}
   <div class="section-h"><div><span class="eyebrow">Simulazione d'esame</span><h2>Scegli la patente</h2></div>
@@ -1920,6 +1921,27 @@ function importProgress(txt){
     S.stats=N.stats; S.exams=N.exams; S.settings=Object.assign({},S.settings,N.settings||{}); if(N.rev) S.rev=Object.assign({},S.rev||{},N.rev);
     save(); updateErrCount(); viewStats(); toastMsg('Progressi ripristinati.'); });
 }
+
+/* Installazione come app (solo sul sito, non dentro Claude) */
+let DEFER_INSTALL=null;
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); DEFER_INSTALL=e; const b=document.querySelector('[data-act="installApp"]'); if(b) b.textContent='Installa'; });
+addEventListener('appinstalled',()=>{ DEFER_INSTALL=null; document.querySelectorAll('.install-card').forEach(x=>x.remove()); toastMsg('App installata: la trovi tra le app del telefono.'); });
+function isStandalone(){ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
+function installCardHTML(){
+  if(IN_CLAUDE||isStandalone()||S.settings.installHidden||location.protocol!=='https:') return '';
+  return `<div class="card install-card" style="margin-top:16px"><div class="row" style="align-items:center;gap:10px 16px"><div class="stack" style="gap:4px;flex:1;min-width:min(240px,100%)"><span class="eyebrow">Sul telefono</span><h2 style="margin:0">Installa il simulatore come app</h2><span class="muted">Un'icona sulla schermata Home, si apre a tutto schermo e funziona anche senza rete.</span></div><div class="row" style="gap:8px"><button class="btn small" data-act="installApp">${DEFER_INSTALL?'Installa':'Come si installa'}</button><button class="btn ghost small" data-act="installLater">Non ora</button></div></div></div>`;
+}
+async function installApp(){
+  if(DEFER_INSTALL){ DEFER_INSTALL.prompt(); try{ await DEFER_INSTALL.userChoice; }catch(e){} DEFER_INSTALL=null; return; }
+  const ua=navigator.userAgent; const ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&'ontouchend' in document);
+  const inApp=/FBAN|FBAV|Instagram|Line\/|GSA\/|; wv\)|WhatsApp/.test(ua);
+  const safariIOS=ios&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS|GSA\//.test(ua);
+  let steps;
+  if(inApp||(ios&&!safariIOS)) steps=`<p>Questa pagina è aperta dentro un'altra app (per esempio la fotocamera o un social), da cui non si può installare.</p><ol><li>Tocca il menu <b>⋯</b> o <b>⋮</b> in alto e scegli <b>Apri in ${ios?'Safari':'Chrome'}</b> (oppure <b>Apri nel browser</b>).</li><li>Poi tocca di nuovo <b>Come si installa</b>.</li></ol>`;
+  else if(ios) steps=`<ol><li>Tocca il tasto <b>Condividi</b> (il quadrato con la freccia verso l'alto) in basso.</li><li>Scorri e scegli <b>Aggiungi alla schermata Home</b>.</li><li>Tocca <b>Aggiungi</b>.</li></ol>`;
+  else steps=`<ol><li>Tocca il menu <b>⋮</b> in alto a destra del browser.</li><li>Scegli <b>Installa app</b> oppure <b>Aggiungi a schermata Home</b>.</li><li>Conferma con <b>Installa</b>.</li></ol><p class="muted">Su computer: in Chrome o Edge clicca l'icona di installazione a destra nella barra degli indirizzi.</p>`;
+  $('#layer').innerHTML=`<div class="overlay" data-act="close"><div class="box" role="dialog" aria-modal="true" aria-labelledby="instT"><h2 id="instT" style="margin:0">Installa il simulatore</h2>${steps}<div class="row" style="justify-content:flex-end"><button class="btn small" data-act="close">Ho capito</button></div></div></div>`;
+}
 function toastMsg(m){ const el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); el.textContent=m; document.body.appendChild(el); setTimeout(()=>el.remove(),3200); }
 function openImport(){
   $('#layer').innerHTML=`<div class="overlay"><div class="box" role="dialog" aria-modal="true" style="max-width:600px;width:100%"><h2>Ripristina i progressi</h2>
@@ -2034,6 +2056,8 @@ document.addEventListener('click',e=>{
   if(a==='crTrainAll'){ crTrain('all'); return; }
   if(a==='twinBank'){ twinBank=t.dataset.b; twinTema=''; viewTwins(); return; }
   if(a==='twinTrain'){ twinTrain(); return; }
+  if(a==='installApp'){ installApp(); return; }
+  if(a==='installLater'){ S.settings.installHidden=1; save(); const w=t.closest('.install-card'); if(w) w.remove(); return; }
   if(a==='welcomeOk'){ S.settings.welcomed=1; save(); const w=t.closest('.welcome'); if(w) w.remove(); return; }
   if(a==='reset'){ confirmBox('Azzerare i progressi?','Verranno cancellate le statistiche di tutte le domande e lo storico delle simulazioni su questo browser.','Azzera',()=>{S.stats={};S.exams=[];save();updateErrCount();viewStats();},true); return; }
   // esame
