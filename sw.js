@@ -1,6 +1,6 @@
 // Funzionamento senza rete. Le pagine si chiedono sempre prima alla rete (così gli aggiornamenti arrivano subito)
 // e, se la rete manca, si servono dalla copia salvata. Icone e immagini si servono dalla copia salvata.
-const CACHE = 'mare-in-testa-2026-11-13d';
+const CACHE = 'mare-in-testa-2026-11-13e';
 const FILES = ['./', 'index.html', 'simulatore.html', 'manifest.webmanifest', 'anteprima.jpg',
   'icone/favicon.svg', 'icone/favicon-32.png', 'icone/apple-touch-icon.png', 'icone/icona-192.png', 'icone/icona-512.png', 'icone/icona-maskable-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting())); });
